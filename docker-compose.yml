@@ -1,16 +1,38 @@
 version: '3.7'
 services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: jenkins.Dockerfile
+    volumes:
+      - $PWD/jenkins_home:/var/jenkins_home
+      - $PWD:/app
+    ports:
+      - 8080:8080     
+  aws:
+    image: organs/awscli
+    environment:
+      AWS_ACCESS_KEY_ID: ${KEY}
+      AWS_SECRET_ACCESS_KEY: ${SECRET}
+      AWS_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
+    volumes:
+      - "$PWD:/app"
+    working_dir: /app
+
   terraform:
     build:
       dockerfile: terraform.Dockerfile
       context: .
     environment:
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
-      AWS_REGION: "${AWS_REGION}"
+      AWS_ACCESS_KEY_ID: AKIAXX3A2H2CJ7OY5N6Z
+      AWS_SECRET_ACCESS_KEY: 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
+      AWS_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
     volumes:
-      - $PWD:/app
+      - "$PWD/terraform:/app"
     working_dir: /app
+
   selenium:
     image: selenium/standalone-chrome-debug
     ports:
@@ -21,6 +43,21 @@ services:
     context: .
    ports:
     - 80:80
+
+  integration-tests:
+    build:
+      dockerfile: rspec.dockerfile
+      context: .
+    environment:
+      SELENIUM_HOST: selenium
+      SELENIUM_PORT: 4444
+    volumes:
+      - $PWD:/app
+    entrypoint: rspec
+    command:
+      - --pattern
+      - /app/spec/integration/*_spec.rb      
+
   unit-tests:
     build:
       dockerfile: rspec.dockerfile
